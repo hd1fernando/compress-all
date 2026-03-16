@@ -52,6 +52,25 @@ python src/main.py ./myfiles -v
 - Only `.br` files are processed during decompression
 - Original files are preserved after compression
 
+## For Developers
+
+### Running Tests
+
+Install dependencies:
+```bash
+pip install brotli pytest
+```
+
+Run all tests:
+```bash
+pytest tests/ -v
+```
+
+Run a specific test file:
+```bash
+pytest tests/test_integration.py -v
+```
+
 ---
 
 ## Created with AI
