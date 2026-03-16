@@ -80,6 +80,22 @@ class TestCompress:
         result = run_program(temp_dir, "--compress")
         
         assert result.returncode == 0
+    
+    def test_compress_with_remove_original(self, temp_dir, files_in_temp_dir):
+        result = run_program(temp_dir, "-c", "-r")
+        
+        assert result.returncode == 0
+        for original_file in files_in_temp_dir:
+            compressed_file = original_file + ".br"
+            assert os.path.exists(compressed_file)
+            assert not os.path.exists(original_file)
+    
+    def test_compress_preserves_original_by_default(self, temp_dir, files_in_temp_dir):
+        result = run_program(temp_dir, "-c")
+        
+        assert result.returncode == 0
+        for original_file in files_in_temp_dir:
+            assert os.path.exists(original_file)
 
 
 class TestDecompress:
@@ -107,6 +123,22 @@ class TestDecompress:
         
         for original_file in files_in_temp_dir:
             assert f"Skipping {os.path.basename(original_file)}" not in result.stdout
+    
+    def test_decompress_with_remove_original(self, temp_dir, compressed_files):
+        result = run_program(temp_dir, "-d", "-r")
+        
+        assert result.returncode == 0
+        for compressed_file in compressed_files:
+            original_file = compressed_file[:-3]
+            assert os.path.exists(original_file)
+            assert not os.path.exists(compressed_file)
+    
+    def test_decompress_preserves_original_by_default(self, temp_dir, compressed_files):
+        result = run_program(temp_dir, "-d")
+        
+        assert result.returncode == 0
+        for compressed_file in compressed_files:
+            assert os.path.exists(compressed_file)
 
 
 class TestHelp:
@@ -122,6 +154,7 @@ class TestHelp:
         output = result.stdout + result.stderr
         assert "-c" in output or "--compress" in output
         assert "-d" in output or "--decompress" in output
+        assert "-r" in output or "--remove-original" in output
 
 
 class TestEdgeCases:
