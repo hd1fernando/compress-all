@@ -60,12 +60,7 @@ This project was developed using artificial intelligence.
 
 ### Tools and LLMs Used
 
-| Tool/LLM | Version | Purpose |
-|----------|---------|---------|
-| OpenCode | - | AI coding assistant |
-| Claude (Anthropic) | - | Code generation and review |
-| GitHub | - | Version control and repository hosting |
-| Python | 3.14 | Programming language |
-| Brotli | 1.2.0 | Compression library |
-
-**Date:** March 2026
+| Tool/LLM | Purpose |
+|----------|---------|
+| OpenCode | AI coding assistant |
+| Claude (Anthropic) | Code generation and review |
