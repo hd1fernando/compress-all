@@ -51,3 +51,21 @@ python main.py ./myfiles -v
 - Already compressed files (.br) are skipped during compression
 - Only `.br` files are processed during decompression
 - Original files are preserved after compression
+
+---
+
+## Created with AI
+
+This project was developed using artificial intelligence.
+
+### Tools and LLMs Used
+
+| Tool/LLM | Version | Purpose |
+|----------|---------|---------|
+| OpenCode | - | AI coding assistant |
+| Claude (Anthropic) | - | Code generation and review |
+| GitHub | - | Version control and repository hosting |
+| Python | 3.14 | Programming language |
+| Brotli | 1.2.0 | Compression library |
+
+**Date:** March 2026
