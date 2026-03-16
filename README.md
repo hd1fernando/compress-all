@@ -4,14 +4,24 @@ A CLI tool for compressing and decompressing files in directories using Brotli c
 
 ## Installation
 
+### Using Virtual Environment (Recommended)
+
+Create and activate a virtual environment:
 ```bash
-pip install brotli
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or: venv\Scripts\activate  # Windows
 ```
 
-Or use the included virtual environment:
+Install dependencies:
+```bash
+pip install brotli pytest
+```
+
+### Global Installation
 
 ```bash
-source venv/bin/activate
+pip install brotli pytest
 ```
 
 ## Usage
@@ -55,11 +65,6 @@ python src/main.py ./myfiles -v
 ## For Developers
 
 ### Running Tests
-
-Install dependencies:
-```bash
-pip install brotli pytest
-```
 
 Run all tests:
 ```bash
