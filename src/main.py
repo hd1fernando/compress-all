@@ -44,17 +44,17 @@ def process_directory(directory, compress=True, remove_original=False):
         print(f"Error: '{directory}' is not a valid directory.")
         return
     
-    files = [
-        f for f in os.listdir(directory)
-        if os.path.isfile(os.path.join(directory, f))
-    ]
+    all_files = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            full_path = os.path.join(root, file)
+            all_files.append((full_path, file))
     
-    if not files:
+    if not all_files:
         print("No files found in directory.")
         return
     
-    for file in files:
-        full_path = os.path.join(directory, file)
+    for full_path, file in all_files:
         
         if compress:
             if file.endswith('.br'):
