@@ -3,23 +3,25 @@
 set -e
 
 INSTALL_DIR="$HOME/.local/bin"
+SHARE_DIR="$HOME/.local/share/compress-all"
 SCRIPT_NAME="compress-all"
-SCRIPT_SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/src/main.py"
 
 install_compress_all() {
     mkdir -p "$INSTALL_DIR"
+    mkdir -p "$SHARE_DIR"
+    
+    cp -r "$(dirname "${BASH_SOURCE[0]}")/src" "$SHARE_DIR/"
+    
+    python3 -m venv "$SHARE_DIR/venv"
+    "$SHARE_DIR/venv/bin/pip" install brotli
     
     cat > "$INSTALL_DIR/$SCRIPT_NAME" << 'EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../share/compress-all" && pwd)"
-python3 "$SCRIPT_DIR/src/main.py" "$@"
+"$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/src/main.py" "$@"
 EOF
     
     chmod +x "$INSTALL_DIR/$SCRIPT_NAME"
-    
-    SHARE_DIR="$HOME/.local/share/compress-all"
-    mkdir -p "$SHARE_DIR"
-    cp -r "$(dirname "${BASH_SOURCE[0]}")/src" "$SHARE_DIR/"
     
     echo "Installed to $INSTALL_DIR/$SCRIPT_NAME"
     echo ""
@@ -29,10 +31,24 @@ EOF
 }
 
 update_compress_all() {
-    SHARE_DIR="$HOME/.local/share/compress-all"
     if [ -d "$SHARE_DIR" ]; then
         rm -rf "$SHARE_DIR/src"
         cp -r "$(dirname "${BASH_SOURCE[0]}")/src" "$SHARE_DIR/"
+        
+        if [ -d "$SHARE_DIR/venv" ]; then
+            "$SHARE_DIR/venv/bin/pip" install --upgrade brotli
+        else
+            python3 -m venv "$SHARE_DIR/venv"
+            "$SHARE_DIR/venv/bin/pip" install brotli
+        fi
+        
+        cat > "$INSTALL_DIR/$SCRIPT_NAME" << 'EOF'
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../share/compress-all" && pwd)"
+"$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/src/main.py" "$@"
+EOF
+        chmod +x "$INSTALL_DIR/$SCRIPT_NAME"
+        
         echo "Updated compress-all successfully"
     else
         echo "compress-all is not installed. Installing..."
@@ -40,7 +56,7 @@ update_compress_all() {
     fi
 }
 
-if [ -f "$HOME/.local/share/compress-all/src/main.py" ]; then
+if [ -f "$SHARE_DIR/src/main.py" ]; then
     update_compress_all
 else
     install_compress_all
