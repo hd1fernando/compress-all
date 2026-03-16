@@ -24,6 +24,26 @@ pip install brotli pytest
 pip install brotli pytest
 ```
 
+### Using Install Script
+
+Run the install script to install globally and use `compress-all` from anywhere:
+
+```bash
+./install.sh
+```
+
+Add to PATH if needed:
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+To update after pulling new changes:
+```bash
+./install.sh
+```
+
+The script automatically detects previous installations and updates them.
+
 ## Usage
 
 ```bash
