@@ -39,13 +39,30 @@ def decompress_file(file_path, remove_original=False):
     return output_path
 
 
-def process_directory(directory, compress=True, remove_original=False):
+def process_directory(directory, compress=True, remove_original=False, exclude=None):
+    if exclude is None:
+        exclude = []
+    
+    exclude_normalized = [os.path.normpath(os.path.join(directory, e)) for e in exclude]
+    directory_normalized = os.path.normpath(directory)
+    
     if not os.path.isdir(directory):
         print(f"Error: '{directory}' is not a valid directory.")
         return
     
     all_files = []
     for root, dirs, files in os.walk(directory):
+        root_normalized = os.path.normpath(root)
+        
+        should_exclude = False
+        for exc in exclude_normalized:
+            if root_normalized == exc or root_normalized.startswith(exc + os.sep):
+                should_exclude = True
+                break
+        
+        if should_exclude:
+            continue
+        
         for file in files:
             full_path = os.path.join(root, file)
             all_files.append((full_path, file))
@@ -104,6 +121,12 @@ def main():
         action="store_true",
         help="Remove original files after compression/decompression"
     )
+    parser.add_argument(
+        "-e", "--exclude",
+        nargs="*",
+        default=[],
+        help="List of directories to exclude from compression/decompression"
+    )
 
     args = parser.parse_args()
 
@@ -115,7 +138,7 @@ def main():
         print(f"Mode: {action.lower()}")
 
     print(f"{action} files in: {args.directory}")
-    process_directory(args.directory, compress=compress, remove_original=args.remove_original)
+    process_directory(args.directory, compress=compress, remove_original=args.remove_original, exclude=args.exclude)
 
 
 if __name__ == "__main__":

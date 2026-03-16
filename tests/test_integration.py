@@ -169,3 +169,130 @@ class TestEdgeCases:
         
         assert "Error" in result.stdout
         assert "not a valid directory" in result.stdout
+
+
+class TestExclude:
+    def test_exclude_single_directory(self, temp_dir):
+        subdir_a = os.path.join(temp_dir, "a")
+        subdir_b = os.path.join(temp_dir, "b")
+        os.makedirs(subdir_a)
+        os.makedirs(subdir_b)
+        
+        file_a = os.path.join(subdir_a, "file_a.txt")
+        file_b = os.path.join(subdir_b, "file_b.txt")
+        
+        with open(file_a, "w") as f:
+            f.write("Content A")
+        with open(file_b, "w") as f:
+            f.write("Content B")
+        
+        result = run_program(temp_dir, "-c", "-e", "b")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_a + ".br")
+        assert os.path.exists(file_b)
+        assert not os.path.exists(file_b + ".br")
+    
+    def test_exclude_directory_with_subdirectories(self, temp_dir):
+        subdir_a = os.path.join(temp_dir, "a")
+        subdir_b = os.path.join(subdir_a, "b")
+        subdir_c = os.path.join(subdir_a, "c")
+        os.makedirs(subdir_b)
+        os.makedirs(subdir_c)
+        
+        file_a = os.path.join(subdir_a, "file_a.txt")
+        file_b = os.path.join(subdir_b, "file_b.txt")
+        file_c = os.path.join(subdir_c, "file_c.txt")
+        
+        with open(file_a, "w") as f:
+            f.write("Content A")
+        with open(file_b, "w") as f:
+            f.write("Content B")
+        with open(file_c, "w") as f:
+            f.write("Content C")
+        
+        result = run_program(temp_dir, "-c", "-e", "a/c")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_a + ".br")
+        assert os.path.exists(file_b + ".br")
+        assert os.path.exists(file_c)
+        assert not os.path.exists(file_c + ".br")
+    
+    def test_exclude_multiple_directories(self, temp_dir):
+        subdir_a = os.path.join(temp_dir, "a")
+        subdir_b = os.path.join(temp_dir, "b")
+        subdir_c = os.path.join(temp_dir, "c")
+        os.makedirs(subdir_a)
+        os.makedirs(subdir_b)
+        os.makedirs(subdir_c)
+        
+        file_a = os.path.join(subdir_a, "file_a.txt")
+        file_b = os.path.join(subdir_b, "file_b.txt")
+        file_c = os.path.join(subdir_c, "file_c.txt")
+        
+        with open(file_a, "w") as f:
+            f.write("Content A")
+        with open(file_b, "w") as f:
+            f.write("Content B")
+        with open(file_c, "w") as f:
+            f.write("Content C")
+        
+        result = run_program(temp_dir, "-c", "-e", "b", "c")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_a + ".br")
+        assert os.path.exists(file_b)
+        assert os.path.exists(file_c)
+        assert not os.path.exists(file_b + ".br")
+        assert not os.path.exists(file_c + ".br")
+    
+    def test_exclude_with_decompress(self, temp_dir):
+        subdir_a = os.path.join(temp_dir, "a")
+        subdir_b = os.path.join(temp_dir, "b")
+        os.makedirs(subdir_a)
+        os.makedirs(subdir_b)
+        
+        file_a = os.path.join(subdir_a, "file_a.txt")
+        file_b = os.path.join(subdir_b, "file_b.txt")
+        
+        with open(file_a, "w") as f:
+            f.write("Content A")
+        with open(file_b, "w") as f:
+            f.write("Content B")
+        
+        subprocess.run(
+            [PYTHON_BIN, MAIN_SCRIPT, temp_dir, "-c", "-r"],
+            check=True
+        )
+        
+        file_a_br = file_a + ".br"
+        file_b_br = file_b + ".br"
+        
+        result = run_program(temp_dir, "-d", "-r", "-e", "b")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_a)
+        assert not os.path.exists(file_a_br)
+        assert os.path.exists(file_b_br)
+        assert not os.path.exists(file_b)
+    
+    def test_exclude_with_long_alias(self, temp_dir):
+        subdir_a = os.path.join(temp_dir, "a")
+        subdir_b = os.path.join(temp_dir, "b")
+        os.makedirs(subdir_a)
+        os.makedirs(subdir_b)
+        
+        file_a = os.path.join(subdir_a, "file_a.txt")
+        file_b = os.path.join(subdir_b, "file_b.txt")
+        
+        with open(file_a, "w") as f:
+            f.write("Content A")
+        with open(file_b, "w") as f:
+            f.write("Content B")
+        
+        result = run_program(temp_dir, "-c", "--exclude", "b")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_a + ".br")
+        assert os.path.exists(file_b)
