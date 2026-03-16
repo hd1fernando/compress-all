@@ -44,6 +44,13 @@ To update after pulling new changes:
 
 The script automatically detects previous installations and updates them.
 
+### Uninstall
+
+To uninstall:
+```bash
+./uninstall.sh
+```
+
 ## Usage
 
 ```bash
