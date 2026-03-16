@@ -17,7 +17,7 @@ source venv/bin/activate
 ## Usage
 
 ```bash
-python main.py <directory> [options]
+python src/main.py <directory> [options]
 ```
 
 ### Options
@@ -31,17 +31,17 @@ python main.py <directory> [options]
 
 Compress all files in a directory:
 ```bash
-python main.py ./myfiles -c
+python src/main.py ./myfiles -c
 ```
 
 Decompress .br files:
 ```bash
-python main.py ./myfiles -d
+python src/main.py ./myfiles -d
 ```
 
 With verbose output:
 ```bash
-python main.py ./myfiles -v
+python src/main.py ./myfiles -v
 ```
 
 ## How it works
