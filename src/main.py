@@ -1,7 +1,43 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import time
 import brotli
+
+
+def get_directory_size(directory, exclude=None):
+    if exclude is None:
+        exclude = []
+    
+    exclude_normalized = [os.path.normpath(os.path.join(directory, e)) for e in exclude]
+    total_size = 0
+    
+    for root, dirs, files in os.walk(directory):
+        root_normalized = os.path.normpath(root)
+        
+        should_exclude = False
+        for exc in exclude_normalized:
+            if root_normalized == exc or root_normalized.startswith(exc + os.sep):
+                should_exclude = True
+                break
+        
+        if should_exclude:
+            continue
+        
+        for file in files:
+            full_path = os.path.join(root, file)
+            if os.path.isfile(full_path):
+                total_size += os.path.getsize(full_path)
+    
+    return total_size
+
+
+def format_size(size_bytes):
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.2f} TB"
 
 
 def compress_file(file_path, remove_original=False):
@@ -138,7 +174,23 @@ def main():
         print(f"Mode: {action.lower()}")
 
     print(f"{action} files in: {args.directory}")
+    
+    start_time = time.time()
+    size_before = get_directory_size(args.directory, exclude=args.exclude)
+    
     process_directory(args.directory, compress=compress, remove_original=args.remove_original, exclude=args.exclude)
+    
+    size_after = get_directory_size(args.directory, exclude=args.exclude)
+    elapsed_time = time.time() - start_time
+    
+    print("")
+    print("=== Summary ===")
+    print(f"Size before: {format_size(size_before)}")
+    print(f"Size after:  {format_size(size_after)}")
+    if size_before > 0:
+        reduction = (1 - size_after / size_before) * 100
+        print(f"Reduced:     {reduction:.1f}%")
+    print(f"Time:        {elapsed_time:.2f}s")
 
 
 if __name__ == "__main__":
