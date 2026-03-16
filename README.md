@@ -32,11 +32,12 @@ python src/main.py <directory> [options]
 
 ### Options
 
-- `-c, --compress`        Compress files (default)
-- `-d, --decompress`      Decompress .br files
-- `-v, --verbose`         Enable verbose output
+- `-c, --compress`          Compress files (default)
+- `-d, --decompress`        Decompress .br files
+- `-v, --verbose`           Enable verbose output
 - `-r, --remove-original`  Remove original files after operation
-- `-h, --help`            Show help message
+- `-e, --exclude`           List of directories to exclude (space-separated)
+- `-h, --help`             Show help message
 
 ### Examples
 
@@ -65,13 +66,24 @@ Decompress and remove .br files:
 python src/main.py ./myfiles -d -r
 ```
 
+Exclude directories from compression/decompression:
+```bash
+python src/main.py ./myfiles -c -e temp cache
+```
+
+Exclude a subdirectory (relative path):
+```bash
+python src/main.py ./myfiles -c -e assets/images
+```
+
 ## How it works
 
-- Only files in the specified directory are processed (subdirectories are ignored)
+- Files in the specified directory and its subdirectories are processed recursively
 - Compressed files get a `.br` extension added
 - Already compressed files (.br) are skipped during compression
 - Only `.br` files are processed during decompression
 - Original files are preserved after compression
+- Directories specified in `--exclude` are skipped entirely
 
 ## For Developers
 
