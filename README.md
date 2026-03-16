@@ -32,10 +32,11 @@ python src/main.py <directory> [options]
 
 ### Options
 
-- `-c, --compress`     Compress files (default)
-- `-d, --decompress`   Decompress .br files
-- `-v, --verbose`      Enable verbose output
-- `-h, --help`         Show help message
+- `-c, --compress`        Compress files (default)
+- `-d, --decompress`      Decompress .br files
+- `-v, --verbose`         Enable verbose output
+- `-r, --remove-original`  Remove original files after operation
+- `-h, --help`            Show help message
 
 ### Examples
 
@@ -52,6 +53,16 @@ python src/main.py ./myfiles -d
 With verbose output:
 ```bash
 python src/main.py ./myfiles -v
+```
+
+Compress and remove original files:
+```bash
+python src/main.py ./myfiles -c -r
+```
+
+Decompress and remove .br files:
+```bash
+python src/main.py ./myfiles -d -r
 ```
 
 ## How it works

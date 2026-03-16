@@ -4,7 +4,7 @@ import os
 import brotli
 
 
-def compress_file(file_path):
+def compress_file(file_path, remove_original=False):
     with open(file_path, 'rb') as f_in:
         data = f_in.read()
     
@@ -14,10 +14,13 @@ def compress_file(file_path):
     with open(output_path, 'wb') as f_out:
         f_out.write(compressed_data)
     
+    if remove_original:
+        os.remove(file_path)
+    
     return output_path
 
 
-def decompress_file(file_path):
+def decompress_file(file_path, remove_original=False):
     if not file_path.endswith('.br'):
         return None
     
@@ -30,10 +33,13 @@ def decompress_file(file_path):
     with open(output_path, 'wb') as f_out:
         f_out.write(data)
     
+    if remove_original:
+        os.remove(file_path)
+    
     return output_path
 
 
-def process_directory(directory, compress=True):
+def process_directory(directory, compress=True, remove_original=False):
     if not os.path.isdir(directory):
         print(f"Error: '{directory}' is not a valid directory.")
         return
@@ -55,7 +61,7 @@ def process_directory(directory, compress=True):
                 print(f"Skipping {file} (already compressed)")
                 continue
             try:
-                output = compress_file(full_path)
+                output = compress_file(full_path, remove_original)
                 print(f"Compressed: {file} -> {os.path.basename(output)}")
             except Exception as e:
                 print(f"Error compressing {file}: {e}")
@@ -63,7 +69,7 @@ def process_directory(directory, compress=True):
             if not file.endswith('.br'):
                 continue
             try:
-                output = decompress_file(full_path)
+                output = decompress_file(full_path, remove_original)
                 print(f"Decompressed: {file} -> {os.path.basename(output)}")
             except Exception as e:
                 print(f"Error decompressing {file}: {e}")
@@ -93,6 +99,11 @@ def main():
         action="store_true",
         help="Enable verbose output"
     )
+    parser.add_argument(
+        "-r", "--remove-original",
+        action="store_true",
+        help="Remove original files after compression/decompression"
+    )
 
     args = parser.parse_args()
 
@@ -104,7 +115,7 @@ def main():
         print(f"Mode: {action.lower()}")
 
     print(f"{action} files in: {args.directory}")
-    process_directory(args.directory, compress=compress)
+    process_directory(args.directory, compress=compress, remove_original=args.remove_original)
 
 
 if __name__ == "__main__":
