@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import logging
 import os
 import time
 import brotli
@@ -81,15 +82,17 @@ def decompress_file(file_path, remove_original=False):
     return output_path
 
 
-def process_directory(directory, compress=True, remove_original=False, exclude=None):
+def process_directory(directory, compress=True, remove_original=False, exclude=None, logger=None):
+    if logger is None:
+        logger = logging.getLogger(__name__)
+    
     if exclude is None:
         exclude = []
     
     exclude_normalized = [os.path.normpath(os.path.join(directory, e)) for e in exclude]
-    directory_normalized = os.path.normpath(directory)
     
     if not os.path.isdir(directory):
-        print(f"Error: '{directory}' is not a valid directory.")
+        logger.error(f"'{directory}' is not a valid directory.")
         return
     
     all_files = []
@@ -110,14 +113,14 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
             all_files.append((full_path, file))
     
     if not all_files:
-        print("No files found in directory.")
+        logger.info("No files found in directory.")
         return
     
     files_to_process = []
     for full_path, file in all_files:
         if compress:
             if file.endswith('.br'):
-                print(f"Skipping {file} (already compressed)")
+                logger.info(f"Skipping {file} (already compressed)")
                 continue
             files_to_process.append((full_path, file))
         else:
@@ -125,11 +128,7 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
                 files_to_process.append((full_path, file))
     
     if not files_to_process:
-        print("No files to process.")
-        return
-    
-    if not files_to_process:
-        print("No files to process.")
+        logger.info("No files to process.")
         return
     
     workers = get_optimal_workers()
@@ -150,9 +149,9 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
         for future in as_completed(futures):
             file, error = future.result()
             if error:
-                print(f"Error {'compressing' if compress else 'decompressing'} {file}: {error}")
+                logger.error(f"Error {'compressing' if compress else 'decompressing'} {file}: {error}")
             else:
-                print(f"{'Compressing' if compress else 'Decompressing'}: {file}")
+                logger.info(f"{'Compressing' if compress else 'Decompressing'}: {file}")
 
 
 def main():
@@ -193,31 +192,38 @@ def main():
 
     args = parser.parse_args()
 
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format='%(message)s',
+        stream=__import__('sys').stdout
+    )
+    logger = logging.getLogger(__name__)
+
     compress = not args.decompress
     action = "Compressing" if compress else "Decompressing"
 
     if args.verbose:
-        print(f"Target directory: {args.directory}")
-        print(f"Mode: {action.lower()}")
+        logger.info(f"Target directory: {args.directory}")
+        logger.info(f"Mode: {action.lower()}")
 
-    print(f"{action} files in: {args.directory} (using {get_optimal_workers()} workers)")
+    logger.info(f"{action} files in: {args.directory} (using {get_optimal_workers()} workers)")
     
     start_time = time.time()
     size_before = get_directory_size(args.directory, exclude=args.exclude)
     
-    process_directory(args.directory, compress=compress, remove_original=args.remove_original, exclude=args.exclude)
+    process_directory(args.directory, compress=compress, remove_original=args.remove_original, exclude=args.exclude, logger=logger)
     
     size_after = get_directory_size(args.directory, exclude=args.exclude)
     elapsed_time = time.time() - start_time
     
-    print("")
-    print("=== Summary ===")
-    print(f"Size before: {format_size(size_before)}")
-    print(f"Size after:  {format_size(size_after)}")
+    logger.info("")
+    logger.info("=== Summary ===")
+    logger.info(f"Size before: {format_size(size_before)}")
+    logger.info(f"Size after:  {format_size(size_after)}")
     if size_before > 0:
         reduction = (1 - size_after / size_before) * 100
-        print(f"Reduced:     {reduction:.1f}%")
-    print(f"Time:        {elapsed_time:.2f}s")
+        logger.info(f"Reduced:     {reduction:.1f}%")
+    logger.info(f"Time:        {elapsed_time:.2f}s")
 
 
 if __name__ == "__main__":

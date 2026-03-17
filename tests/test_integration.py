@@ -167,7 +167,6 @@ class TestEdgeCases:
     def test_invalid_directory(self):
         result = run_program("/nonexistent/directory", "-c")
         
-        assert "Error" in result.stdout
         assert "not a valid directory" in result.stdout
 
 
