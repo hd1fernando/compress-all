@@ -3,6 +3,7 @@ import argparse
 import os
 import time
 import brotli
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
     from tqdm import tqdm
@@ -10,6 +11,11 @@ try:
 except ImportError:
     HAS_TQDM = False
     tqdm = lambda x, **kwargs: iter(x)
+
+
+def get_optimal_workers():
+    cpu_count = os.cpu_count() or 1
+    return max(1, cpu_count - 1)
 
 
 def get_directory_size(directory, exclude=None):
@@ -129,15 +135,36 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
         print("No files to process.")
         return
     
-    for full_path, file in tqdm(files_to_process, desc="Compressing" if compress else "Decompressing", unit="file"):
-        print(f"{'Compressing' if compress else 'Decompressing'}: {file}")
+    if not files_to_process:
+        print("No files to process.")
+        return
+    
+    workers = get_optimal_workers()
+    
+    def process_single(full_path, file):
         try:
             if compress:
                 output = compress_file(full_path, remove_original)
             else:
                 output = decompress_file(full_path, remove_original)
+            return (file, None)
         except Exception as e:
-            print(f"Error {'compressing' if compress else 'decompressing'} {file}: {e}")
+            return (file, str(e))
+    
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(process_single, fp, f): f for fp, f in files_to_process}
+        
+        results = []
+        for future in tqdm(as_completed(futures), total=len(files_to_process), 
+                           desc="Compressing" if compress else "Decompressing", unit="file"):
+            file, error = future.result()
+            results.append((file, error))
+            if error:
+                print(f"Error {'compressing' if compress else 'decompressing'} {file}: {error}")
+        
+        for file, error in results:
+            if error is None:
+                print(f"{'Compressing' if compress else 'Decompressing'}: {file}")
 
 
 def main():
