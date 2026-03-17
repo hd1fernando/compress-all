@@ -154,14 +154,15 @@ def process_directory(
             return (file, str(e))
     
     with ThreadPoolExecutor(max_workers=workers) as executor:
+        for fp, f in files_to_process:
+            logger.info(f"{'Compressing' if compress else 'Decompressing'}: {f}")
+        
         futures = {executor.submit(process_single, fp, f): f for fp, f in files_to_process}
         
         for future in as_completed(futures):
             file, error = future.result()
             if error:
                 logger.error(f"Error {'compressing' if compress else 'decompressing'} {file}: {error}")
-            else:
-                logger.info(f"{'Compressing' if compress else 'Decompressing'}: {file}")
 
 
 def main() -> None:

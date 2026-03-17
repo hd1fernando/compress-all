@@ -63,6 +63,16 @@ class TestCompress:
         assert "Compressing files" in result.stdout
         assert "Compressing: file0.txt" in result.stdout
     
+    def test_compress_message_before_summary(self, temp_dir, files_in_temp_dir):
+        result = run_program(temp_dir, "-c")
+        
+        compress_pos = result.stdout.find("Compressing: file0.txt")
+        summary_pos = result.stdout.find("=== Summary ===")
+        
+        assert compress_pos != -1
+        assert summary_pos != -1
+        assert compress_pos < summary_pos
+    
     def test_compress_verbose_mode(self, temp_dir, files_in_temp_dir):
         result = run_program(temp_dir, "-c", "-v")
         
@@ -112,6 +122,16 @@ class TestDecompress:
         
         assert "Decompressing files" in result.stdout
         assert "Decompressing: file0.txt.br" in result.stdout
+    
+    def test_decompress_message_before_summary(self, temp_dir, compressed_files):
+        result = run_program(temp_dir, "-d")
+        
+        decompress_pos = result.stdout.find("Decompressing: file0.txt.br")
+        summary_pos = result.stdout.find("=== Summary ===")
+        
+        assert decompress_pos != -1
+        assert summary_pos != -1
+        assert decompress_pos < summary_pos
     
     def test_decompress_with_long_alias(self, temp_dir, compressed_files):
         result = run_program(temp_dir, "--decompress")
