@@ -3,16 +3,18 @@ import argparse
 import logging
 import os
 import time
-import brotli
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional, List, Tuple
+
+import brotli
 
 
-def get_optimal_workers():
+def get_optimal_workers() -> int:
     cpu_count = os.cpu_count() or 1
     return max(1, cpu_count - 1)
 
 
-def get_directory_size(directory, exclude=None):
+def get_directory_size(directory: str, exclude: Optional[List[str]] = None) -> int:
     if exclude is None:
         exclude = []
     
@@ -39,7 +41,7 @@ def get_directory_size(directory, exclude=None):
     return total_size
 
 
-def format_size(size_bytes):
+def format_size(size_bytes: float) -> str:
     for unit in ['B', 'KB', 'MB', 'GB']:
         if size_bytes < 1024:
             return f"{size_bytes:.2f} {unit}"
@@ -47,7 +49,7 @@ def format_size(size_bytes):
     return f"{size_bytes:.2f} TB"
 
 
-def compress_file(file_path, remove_original=False):
+def compress_file(file_path: str, remove_original: bool = False) -> str:
     with open(file_path, 'rb') as f_in:
         data = f_in.read()
     
@@ -63,7 +65,7 @@ def compress_file(file_path, remove_original=False):
     return output_path
 
 
-def decompress_file(file_path, remove_original=False):
+def decompress_file(file_path: str, remove_original: bool = False) -> Optional[str]:
     if not file_path.endswith('.br'):
         return None
     
@@ -82,7 +84,13 @@ def decompress_file(file_path, remove_original=False):
     return output_path
 
 
-def process_directory(directory, compress=True, remove_original=False, exclude=None, logger=None):
+def process_directory(
+    directory: str,
+    compress: bool = True,
+    remove_original: bool = False,
+    exclude: Optional[List[str]] = None,
+    logger: Optional[logging.Logger] = None
+) -> None:
     if logger is None:
         logger = logging.getLogger(__name__)
     
@@ -95,7 +103,7 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
         logger.error(f"'{directory}' is not a valid directory.")
         return
     
-    all_files = []
+    all_files: List[Tuple[str, str]] = []
     for root, dirs, files in os.walk(directory):
         root_normalized = os.path.normpath(root)
         
@@ -116,7 +124,7 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
         logger.info("No files found in directory.")
         return
     
-    files_to_process = []
+    files_to_process: List[Tuple[str, str]] = []
     for full_path, file in all_files:
         if compress:
             if file.endswith('.br'):
@@ -133,7 +141,7 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
     
     workers = get_optimal_workers()
     
-    def process_single(full_path, file):
+    def process_single(full_path: str, file: str) -> Tuple[str, Optional[str]]:
         try:
             if compress:
                 output = compress_file(full_path, remove_original)
@@ -154,7 +162,7 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
                 logger.info(f"{'Compressing' if compress else 'Decompressing'}: {file}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress or decompress files in a directory using Brotli"
     )
@@ -192,10 +200,11 @@ def main():
 
     args = parser.parse_args()
 
+    import sys
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format='%(message)s',
-        stream=__import__('sys').stdout
+        stream=sys.stdout
     )
     logger = logging.getLogger(__name__)
 
