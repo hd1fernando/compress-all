@@ -251,7 +251,8 @@ def main() -> None:
         for full_path, file in all_files:
             if compress:
                 if file.endswith('.br'):
-                    logger.info(f"Would skip {file} (already compressed)")
+                    rel_path = os.path.relpath(full_path, args.directory)
+                    logger.info(f"Would skip {rel_path} (already compressed)")
                     continue
                 files_to_process.append((full_path, file))
             else:
@@ -264,11 +265,12 @@ def main() -> None:
         
         logger.info(f"Would process {len(files_to_process)} file(s):")
         for full_path, file in files_to_process:
+            rel_path = os.path.relpath(full_path, args.directory)
             if compress:
-                logger.info(f"  Would compress: {file} -> {file}.br")
+                logger.info(f"  Would compress: {rel_path} -> {rel_path}.br")
             else:
-                original = file[:-3] if file.endswith('.br') else file
-                logger.info(f"  Would decompress: {file} -> {original}")
+                original = os.path.relpath(full_path[:-3], args.directory)
+                logger.info(f"  Would decompress: {rel_path} -> {original}")
         
         logger.info("")
         logger.info(f"[DRY RUN] Total: {len(files_to_process)} file(s)")
