@@ -197,6 +197,11 @@ def main() -> None:
         default=[],
         help="List of directories to exclude from compression/decompression"
     )
+    parser.add_argument(
+        "-n", "--dry-run",
+        action="store_true",
+        help="Show what would be processed without executing"
+    )
 
     args = parser.parse_args()
 
@@ -214,6 +219,65 @@ def main() -> None:
     if args.verbose:
         logger.info(f"Target directory: {args.directory}")
         logger.info(f"Mode: {action.lower()}")
+
+    if args.dry_run:
+        logger.info(f"[DRY RUN] {action} files in: {args.directory}")
+        logger.info("")
+        
+        exclude_normalized = [os.path.normpath(os.path.join(args.directory, e)) for e in args.exclude]
+        
+        all_files: List[Tuple[str, str]] = []
+        for root, dirs, files in os.walk(args.directory):
+            root_normalized = os.path.normpath(root)
+            
+            should_exclude = False
+            for exc in exclude_normalized:
+                if root_normalized == exc or root_normalized.startswith(exc + os.sep):
+                    should_exclude = True
+                    break
+            
+            if should_exclude:
+                continue
+            
+            for file in files:
+                full_path = os.path.join(root, file)
+                all_files.append((full_path, file))
+        
+        if not all_files:
+            logger.info("No files found in directory.")
+            return
+        
+        files_to_process = []
+        for full_path, file in all_files:
+            if compress:
+                if file.endswith('.br'):
+                    logger.info(f"Would skip {file} (already compressed)")
+                    continue
+                files_to_process.append((full_path, file))
+            else:
+                if file.endswith('.br'):
+                    files_to_process.append((full_path, file))
+        
+        if not files_to_process:
+            logger.info("No files to process.")
+            return
+        
+        logger.info(f"Would process {len(files_to_process)} file(s):")
+        for full_path, file in files_to_process:
+            if compress:
+                logger.info(f"  Would compress: {file} -> {file}.br")
+            else:
+                original = file[:-3] if file.endswith('.br') else file
+                logger.info(f"  Would decompress: {file} -> {original}")
+        
+        logger.info("")
+        logger.info(f"[DRY RUN] Total: {len(files_to_process)} file(s)")
+        
+        size_before = get_directory_size(args.directory, exclude=args.exclude)
+        estimated_size = size_before * 0.3
+        logger.info(f"[DRY RUN] Estimated size after: {format_size(estimated_size)} (based on ~70% compression ratio)")
+        
+        return
 
     logger.info(f"{action} files in: {args.directory} (using {get_optimal_workers()} workers)")
     
