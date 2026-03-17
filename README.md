@@ -64,6 +64,7 @@ python src/main.py <directory> [options]
 - `-v, --verbose`           Enable verbose output
 - `-r, --remove-original`  Remove original files after operation
 - `-e, --exclude`           List of directories to exclude (space-separated)
+- `-n, --dry-run`          Show what would be processed without executing
 - `-h, --help`             Show help message
 
 ### Examples
@@ -101,6 +102,11 @@ python src/main.py ./myfiles -c -e temp cache
 Exclude a subdirectory (relative path):
 ```bash
 python src/main.py ./myfiles -c -e assets/images
+```
+
+Dry run (preview without executing):
+```bash
+python src/main.py ./myfiles -c -n
 ```
 
 ## How it works
@@ -148,15 +154,6 @@ Add `--include-ext` flag to process only specific file extensions.
 
 ```bash
 compress-all ./myfiles -c --include-ext txt py js
-```
-
-### Dry Run Mode
-Add `--dry-run` flag to show what would be processed without executing.
-
-**Purpose:** Preview which files would be compressed/decompressed before running.
-
-```bash
-compress-all ./myfiles -c --dry-run
 ```
 
 ### Stream Support
