@@ -4,6 +4,13 @@ import os
 import time
 import brotli
 
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+    tqdm = lambda x, **kwargs: iter(x)
+
 
 def get_directory_size(directory, exclude=None):
     if exclude is None:
@@ -107,25 +114,30 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
         print("No files found in directory.")
         return
     
+    files_to_process = []
     for full_path, file in all_files:
-        
         if compress:
             if file.endswith('.br'):
                 print(f"Skipping {file} (already compressed)")
                 continue
-            try:
-                output = compress_file(full_path, remove_original)
-                print(f"Compressed: {file} -> {os.path.basename(output)}")
-            except Exception as e:
-                print(f"Error compressing {file}: {e}")
+            files_to_process.append((full_path, file))
         else:
-            if not file.endswith('.br'):
-                continue
-            try:
+            if file.endswith('.br'):
+                files_to_process.append((full_path, file))
+    
+    if not files_to_process:
+        print("No files to process.")
+        return
+    
+    for full_path, file in tqdm(files_to_process, desc="Compressing" if compress else "Decompressing", unit="file"):
+        print(f"{'Compressing' if compress else 'Decompressing'}: {file}")
+        try:
+            if compress:
+                output = compress_file(full_path, remove_original)
+            else:
                 output = decompress_file(full_path, remove_original)
-                print(f"Decompressed: {file} -> {os.path.basename(output)}")
-            except Exception as e:
-                print(f"Error decompressing {file}: {e}")
+        except Exception as e:
+            print(f"Error {'compressing' if compress else 'decompressing'} {file}: {e}")
 
 
 def main():

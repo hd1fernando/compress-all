@@ -61,7 +61,7 @@ class TestCompress:
         result = run_program(temp_dir, "-c")
         
         assert "Compressing files" in result.stdout
-        assert "Compressed: file0.txt" in result.stdout
+        assert "Compressing: file0.txt" in result.stdout
     
     def test_compress_verbose_mode(self, temp_dir, files_in_temp_dir):
         result = run_program(temp_dir, "-c", "-v")
@@ -111,7 +111,7 @@ class TestDecompress:
         result = run_program(temp_dir, "-d")
         
         assert "Decompressing files" in result.stdout
-        assert "Decompressed: file0.txt.br" in result.stdout
+        assert "Decompressing: file0.txt.br" in result.stdout
     
     def test_decompress_with_long_alias(self, temp_dir, compressed_files):
         result = run_program(temp_dir, "--decompress")
