@@ -132,57 +132,6 @@ Run a specific test file:
 pytest tests/test_integration.py -v
 ```
 
-## Roadmap / Future Work
-
-### Compression Level
-Add option to choose Brotli compression quality (0-11).
-
-**Purpose:** Allow users to balance between compression ratio and speed.
-
-```bash
-# Fast compression (lower ratio)
-compress-all ./myfiles -c --quality 1
-
-# Maximum compression (slower)
-compress-all ./myfiles -c --quality 11
-```
-
-### File Extensions Filter
-Add `--include-ext` flag to process only specific file extensions.
-
-**Purpose:** Compress only certain types of files (e.g., only `.txt`, `.py` files).
-
-```bash
-compress-all ./myfiles -c --include-ext txt py js
-```
-
-### Stream Support
-Add support for stdin/stdout to enable piping.
-
-**Purpose:** Compress data from other commands or output to stdout.
-
-```bash
-cat file.txt | compress-all --compress > file.txt.br
-```
-
-### Config File
-Add configuration file (`~/.compress-all.conf`) for default settings.
-
-**Purpose:** Avoid repeating common options like `--exclude` or `--remove-original`.
-
-### Robust Error Handling
-Improve handling of edge cases:
-- Files with permission denied
-- Disk full errors
-- Locked files
-- Symbolic links
-
-### Code Organization
-Separate code into modules:
-- `src/cli.py` - Command line interface
-- `src/compress.py` - Compression/decompression logic
-- `src/utils.py` - Utility functions
-
 ---
 
 ## Created with AI
