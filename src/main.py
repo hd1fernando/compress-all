@@ -5,13 +5,6 @@ import time
 import brotli
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-try:
-    from tqdm import tqdm
-    HAS_TQDM = True
-except ImportError:
-    HAS_TQDM = False
-    tqdm = lambda x, **kwargs: iter(x)
-
 
 def get_optimal_workers():
     cpu_count = os.cpu_count() or 1
@@ -154,16 +147,11 @@ def process_directory(directory, compress=True, remove_original=False, exclude=N
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(process_single, fp, f): f for fp, f in files_to_process}
         
-        results = []
-        for future in tqdm(as_completed(futures), total=len(files_to_process), 
-                           desc="Compressing" if compress else "Decompressing", unit="file"):
+        for future in as_completed(futures):
             file, error = future.result()
-            results.append((file, error))
             if error:
                 print(f"Error {'compressing' if compress else 'decompressing'} {file}: {error}")
-        
-        for file, error in results:
-            if error is None:
+            else:
                 print(f"{'Compressing' if compress else 'Decompressing'}: {file}")
 
 

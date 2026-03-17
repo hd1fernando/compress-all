@@ -13,7 +13,7 @@ install_compress_all() {
     cp -r "$(dirname "${BASH_SOURCE[0]}")/src" "$SHARE_DIR/"
     
     python3 -m venv "$SHARE_DIR/venv"
-    "$SHARE_DIR/venv/bin/pip" install brotli tqdm
+    "$SHARE_DIR/venv/bin/pip" install brotli
     
     cat > "$INSTALL_DIR/$SCRIPT_NAME" << 'EOF'
 #!/bin/bash
@@ -36,10 +36,10 @@ update_compress_all() {
         cp -r "$(dirname "${BASH_SOURCE[0]}")/src" "$SHARE_DIR/"
         
         if [ -d "$SHARE_DIR/venv" ]; then
-            "$SHARE_DIR/venv/bin/pip" install --upgrade brotli tqdm
+            "$SHARE_DIR/venv/bin/pip" install --upgrade brotli
         else
             python3 -m venv "$SHARE_DIR/venv"
-            "$SHARE_DIR/venv/bin/pip" install brotli tqdm
+            "$SHARE_DIR/venv/bin/pip" install brotli
         fi
         
         cat > "$INSTALL_DIR/$SCRIPT_NAME" << 'EOF'
