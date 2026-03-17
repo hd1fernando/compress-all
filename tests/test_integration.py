@@ -157,6 +157,14 @@ class TestHelp:
         assert "-r" in output or "--remove-original" in output
 
 
+class TestVersion:
+    def test_version_flag(self):
+        result = run_program("--version")
+        
+        assert result.returncode == 0
+        assert "0.1.0" in result.stdout
+
+
 class TestEdgeCases:
     def test_empty_directory(self, temp_dir):
         result = run_program(temp_dir, "-c")

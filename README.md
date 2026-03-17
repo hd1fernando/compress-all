@@ -65,6 +65,7 @@ python src/main.py <directory> [options]
 - `-r, --remove-original`  Remove original files after operation
 - `-e, --exclude`           List of directories to exclude (space-separated)
 - `-n, --dry-run`          Show what would be processed without executing
+- `--version`              Show version number
 - `-h, --help`             Show help message
 
 ### Examples

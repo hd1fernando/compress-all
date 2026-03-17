@@ -8,6 +8,8 @@ from typing import Optional, List, Tuple
 
 import brotli
 
+__version__ = "0.1.0"
+
 
 def get_optimal_workers() -> int:
     cpu_count = os.cpu_count() or 1
@@ -165,6 +167,11 @@ def process_directory(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress or decompress files in a directory using Brotli"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s 0.1.0"
     )
     parser.add_argument(
         "directory",
