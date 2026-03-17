@@ -212,7 +212,7 @@ def main():
         print(f"Target directory: {args.directory}")
         print(f"Mode: {action.lower()}")
 
-    print(f"{action} files in: {args.directory}")
+    print(f"{action} files in: {args.directory} (using {get_optimal_workers()} workers)")
     
     start_time = time.time()
     size_before = get_directory_size(args.directory, exclude=args.exclude)
