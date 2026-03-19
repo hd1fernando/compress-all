@@ -512,3 +512,75 @@ class TestAdditionalEdgeCases:
         result = run_program(temp_dir, "-c", "-v")
         
         assert "workers" in result.stdout
+
+
+class TestQuality:
+    def test_quality_1_compresses_file(self, temp_dir):
+        large_content = "A" * 10000
+        file_path = os.path.join(temp_dir, "test.txt")
+        
+        with open(file_path, "w") as f:
+            f.write(large_content)
+        
+        result = run_program(temp_dir, "-c", "-q", "1")
+        
+        assert result.returncode == 0
+        compressed_file = file_path + ".br"
+        assert os.path.exists(compressed_file)
+    
+    def test_quality_11_compresses_file(self, temp_dir):
+        large_content = "A" * 10000
+        file_path = os.path.join(temp_dir, "test.txt")
+        
+        with open(file_path, "w") as f:
+            f.write(large_content)
+        
+        result = run_program(temp_dir, "-c", "--quality", "11")
+        
+        assert result.returncode == 0
+        compressed_file = file_path + ".br"
+        assert os.path.exists(compressed_file)
+    
+    def test_higher_quality_produces_better_compression(self, temp_dir):
+        large_content = "A" * 10000
+        file_path = os.path.join(temp_dir, "test.txt")
+        
+        with open(file_path, "w") as f:
+            f.write(large_content)
+        
+        result_q1 = run_program(temp_dir, "-c", "--quality", "1")
+        compressed_q1 = file_path + ".br"
+        size_q1 = os.path.getsize(compressed_q1)
+        os.remove(compressed_q1)
+        os.remove(file_path)
+        
+        with open(file_path, "w") as f:
+            f.write(large_content)
+        
+        result_q11 = run_program(temp_dir, "-c", "--quality", "11")
+        compressed_q11 = file_path + ".br"
+        size_q11 = os.path.getsize(compressed_q11)
+        
+        assert size_q11 < size_q1
+    
+    def test_quality_with_long_alias(self, temp_dir):
+        large_content = "A" * 5000
+        file_path = os.path.join(temp_dir, "test.txt")
+        
+        with open(file_path, "w") as f:
+            f.write(large_content)
+        
+        result = run_program(temp_dir, "--compress", "--quality", "6")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_path + ".br")
+    
+    def test_invalid_quality_value(self, temp_dir):
+        result = run_program(temp_dir, "-c", "-q", "0")
+        
+        assert result.returncode != 0
+    
+    def test_invalid_quality_above_max(self, temp_dir):
+        result = run_program(temp_dir, "-c", "-q", "12")
+        
+        assert result.returncode != 0

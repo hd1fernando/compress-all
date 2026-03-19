@@ -51,11 +51,11 @@ def format_size(size_bytes: float) -> str:
     return f"{size_bytes:.2f} TB"
 
 
-def compress_file(file_path: str, remove_original: bool = False) -> str:
+def compress_file(file_path: str, remove_original: bool = False, quality: int = 6) -> str:
     with open(file_path, 'rb') as f_in:
         data = f_in.read()
     
-    compressed_data = brotli.compress(data)
+    compressed_data = brotli.compress(data, mode=0, quality=quality)
     
     output_path = file_path + '.br'
     with open(output_path, 'wb') as f_out:
@@ -91,6 +91,7 @@ def process_directory(
     compress: bool = True,
     remove_original: bool = False,
     exclude: Optional[List[str]] = None,
+    quality: int = 6,
     logger: Optional[logging.Logger] = None
 ) -> None:
     if logger is None:
@@ -143,10 +144,10 @@ def process_directory(
     
     workers = get_optimal_workers()
     
-    def process_single(full_path: str, file: str) -> Tuple[str, Optional[str]]:
+    def process_single(full_path: str, file: str, quality: int) -> Tuple[str, Optional[str]]:
         try:
             if compress:
-                output = compress_file(full_path, remove_original)
+                output = compress_file(full_path, remove_original, quality)
             else:
                 output = decompress_file(full_path, remove_original)
             return (file, None)
@@ -157,7 +158,7 @@ def process_directory(
         for fp, f in files_to_process:
             logger.info(f"{'Compressing' if compress else 'Decompressing'}: {f}")
         
-        futures = {executor.submit(process_single, fp, f): f for fp, f in files_to_process}
+        futures = {executor.submit(process_single, fp, f, quality): f for fp, f in files_to_process}
         
         for future in as_completed(futures):
             file, error = future.result()
@@ -209,6 +210,13 @@ def main() -> None:
         "-n", "--dry-run",
         action="store_true",
         help="Show what would be processed without executing"
+    )
+    parser.add_argument(
+        "-q", "--quality",
+        type=int,
+        choices=range(1, 12),
+        default=6,
+        help="Compression quality 1-11 (default: 6)"
     )
 
     args = parser.parse_args()
@@ -294,7 +302,7 @@ def main() -> None:
     start_time = time.time()
     size_before = get_directory_size(args.directory, exclude=args.exclude)
     
-    process_directory(args.directory, compress=compress, remove_original=args.remove_original, exclude=args.exclude, logger=logger)
+    process_directory(args.directory, compress=compress, remove_original=args.remove_original, exclude=args.exclude, quality=args.quality, logger=logger)
     
     size_after = get_directory_size(args.directory, exclude=args.exclude)
     elapsed_time = time.time() - start_time

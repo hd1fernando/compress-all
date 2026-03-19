@@ -65,6 +65,7 @@ python src/main.py <directory> [options]
 - `-r, --remove-original`  Remove original files after operation
 - `-e, --exclude`           List of directories to exclude (space-separated)
 - `-n, --dry-run`          Show what would be processed without executing
+- `-q, --quality`          Compression quality 1-11 (default: 6)
 - `--version`              Show version number
 - `-h, --help`             Show help message
 
@@ -108,6 +109,16 @@ python src/main.py ./myfiles -c -e assets/images
 Dry run (preview without executing):
 ```bash
 python src/main.py ./myfiles -c -n
+```
+
+Fast compression (lower ratio):
+```bash
+python src/main.py ./myfiles -c --quality 1
+```
+
+Maximum compression (slower):
+```bash
+python src/main.py ./myfiles -c --quality 11
 ```
 
 ## How it works
