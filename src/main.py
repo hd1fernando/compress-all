@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 import brotli
 
@@ -176,8 +176,8 @@ def main() -> None:
         version="%(prog)s 0.2.0"
     )
     parser.add_argument(
-        "directory",
-        help="Path to the directory containing files"
+        "path",
+        help="Path to a file or directory containing files"
     )
     parser.add_argument(
         "-c", "--compress",
@@ -229,21 +229,76 @@ def main() -> None:
     )
     logger = logging.getLogger(__name__)
 
+    target_path = os.path.normpath(args.path)
+    is_file = os.path.isfile(target_path)
+    is_directory = os.path.isdir(target_path)
+
+    if not is_file and not is_directory:
+        logger.error(f"'{target_path}' is not a valid file or directory.")
+        return
+
     compress = not args.decompress
     action = "Compressing" if compress else "Decompressing"
 
     if args.verbose:
-        logger.info(f"Target directory: {args.directory}")
+        logger.info(f"Target: {target_path}")
         logger.info(f"Mode: {action.lower()}")
 
+    if is_file:
+        file_name = os.path.basename(target_path)
+        
+        if compress:
+            if file_name.endswith('.br'):
+                logger.info(f"Skipping {file_name} (already compressed)")
+                return
+        else:
+            if not file_name.endswith('.br'):
+                logger.error(f"'{file_name}' is not a .br file.")
+                return
+
+        if args.dry_run:
+            if compress:
+                logger.info(f"[DRY RUN] Would compress: {file_name} -> {file_name}.br")
+            else:
+                original = file_name[:-3]
+                logger.info(f"[DRY RUN] Would decompress: {file_name} -> {original}")
+            return
+
+        logger.info(f"{action}: {file_name}")
+        start_time = time.time()
+        size_before = os.path.getsize(target_path)
+        
+        try:
+            if compress:
+                output = compress_file(target_path, args.remove_original, args.quality)
+            else:
+                output = decompress_file(target_path, args.remove_original)
+            
+            if output:
+                size_after = os.path.getsize(output)
+                elapsed_time = time.time() - start_time
+                
+                logger.info("")
+                logger.info("=== Summary ===")
+                logger.info(f"Size before: {format_size(size_before)}")
+                logger.info(f"Size after:  {format_size(size_after)}")
+                if size_before > 0:
+                    reduction = (1 - size_after / size_before) * 100
+                    logger.info(f"Reduced:     {reduction:.1f}%")
+                logger.info(f"Time:        {elapsed_time:.2f}s")
+        except Exception as e:
+            logger.error(f"Error {action.lower()} {file_name}: {e}")
+        
+        return
+
     if args.dry_run:
-        logger.info(f"[DRY RUN] {action} files in: {args.directory}")
+        logger.info(f"[DRY RUN] {action} files in: {target_path}")
         logger.info("")
         
-        exclude_normalized = [os.path.normpath(os.path.join(args.directory, e)) for e in args.exclude]
+        exclude_normalized = [os.path.normpath(os.path.join(target_path, e)) for e in args.exclude]
         
         all_files: List[Tuple[str, str]] = []
-        for root, dirs, files in os.walk(args.directory):
+        for root, dirs, files in os.walk(target_path):
             root_normalized = os.path.normpath(root)
             
             should_exclude = False
@@ -267,7 +322,7 @@ def main() -> None:
         for full_path, file in all_files:
             if compress:
                 if file.endswith('.br'):
-                    rel_path = os.path.relpath(full_path, args.directory)
+                    rel_path = os.path.relpath(full_path, target_path)
                     logger.info(f"Would skip {rel_path} (already compressed)")
                     continue
                 files_to_process.append((full_path, file))
@@ -281,30 +336,30 @@ def main() -> None:
         
         logger.info(f"Would process {len(files_to_process)} file(s):")
         for full_path, file in files_to_process:
-            rel_path = os.path.relpath(full_path, args.directory)
+            rel_path = os.path.relpath(full_path, target_path)
             if compress:
                 logger.info(f"  Would compress: {rel_path} -> {rel_path}.br")
             else:
-                original = os.path.relpath(full_path[:-3], args.directory)
+                original = os.path.relpath(full_path[:-3], target_path)
                 logger.info(f"  Would decompress: {rel_path} -> {original}")
         
         logger.info("")
         logger.info(f"[DRY RUN] Total: {len(files_to_process)} file(s)")
         
-        size_before = get_directory_size(args.directory, exclude=args.exclude)
+        size_before = get_directory_size(target_path, exclude=args.exclude)
         estimated_size = size_before * 0.3
         logger.info(f"[DRY RUN] Estimated size after: {format_size(estimated_size)} (based on ~70% compression ratio)")
         
         return
 
-    logger.info(f"{action} files in: {args.directory} (using {get_optimal_workers()} workers)")
+    logger.info(f"{action} files in: {target_path} (using {get_optimal_workers()} workers)")
     
     start_time = time.time()
-    size_before = get_directory_size(args.directory, exclude=args.exclude)
+    size_before = get_directory_size(target_path, exclude=args.exclude)
     
-    process_directory(args.directory, compress=compress, remove_original=args.remove_original, exclude=args.exclude, quality=args.quality, logger=logger)
+    process_directory(target_path, compress=compress, remove_original=args.remove_original, exclude=args.exclude, quality=args.quality, logger=logger)
     
-    size_after = get_directory_size(args.directory, exclude=args.exclude)
+    size_after = get_directory_size(target_path, exclude=args.exclude)
     elapsed_time = time.time() - start_time
     
     logger.info("")

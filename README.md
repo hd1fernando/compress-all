@@ -54,8 +54,10 @@ To uninstall:
 ## Usage
 
 ```bash
-python src/main.py <directory> [options]
+python src/main.py <path> [options]
 ```
+
+Where `<path>` is a file or directory containing files.
 
 ### Options
 
@@ -111,6 +113,16 @@ Dry run (preview without executing):
 python src/main.py ./myfiles -c -n
 ```
 
+Compress a single file:
+```bash
+python src/main.py ./myfiles/image.png -c
+```
+
+Decompress a single file:
+```bash
+python src/main.py ./myfiles/image.png.br -d
+```
+
 Fast compression (lower ratio):
 ```bash
 python src/main.py ./myfiles -c --quality 1
@@ -124,6 +136,7 @@ python src/main.py ./myfiles -c --quality 11
 ## How it works
 
 - Files in the specified directory and its subdirectories are processed recursively
+- Single files can also be compressed or decompressed directly
 - Compressed files get a `.br` extension added
 - Already compressed files (.br) are skipped during compression
 - Only `.br` files are processed during decompression

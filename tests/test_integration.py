@@ -76,7 +76,7 @@ class TestCompress:
     def test_compress_verbose_mode(self, temp_dir, files_in_temp_dir):
         result = run_program(temp_dir, "-c", "-v")
         
-        assert "Target directory" in result.stdout
+        assert "Target:" in result.stdout
         assert "Mode: compressing" in result.stdout
     
     def test_compress_skips_already_compressed(self, temp_dir, files_in_temp_dir):
@@ -182,7 +182,7 @@ class TestVersion:
         result = run_program("--version")
         
         assert result.returncode == 0
-        assert "0.1.0" in result.stdout
+        assert "0.2.0" in result.stdout
 
 
 class TestEdgeCases:
@@ -192,10 +192,10 @@ class TestEdgeCases:
         assert result.returncode == 0
         assert "No files found" in result.stdout
     
-    def test_invalid_directory(self):
+    def test_invalid_path(self):
         result = run_program("/nonexistent/directory", "-c")
         
-        assert "not a valid directory" in result.stdout
+        assert "not a valid file or directory" in result.stdout
 
 
 class TestExclude:
@@ -386,7 +386,7 @@ class TestVerbose:
         result = run_program(temp_dir, "-d", "-v")
         
         assert result.returncode == 0
-        assert "Target directory" in result.stdout
+        assert "Target:" in result.stdout
         assert "Mode: decompressing" in result.stdout
 
 
@@ -584,3 +584,126 @@ class TestQuality:
         result = run_program(temp_dir, "-c", "-q", "12")
         
         assert result.returncode != 0
+
+
+class TestSingleFile:
+    def test_compress_single_file(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("Test content for single file compression")
+        
+        result = run_program(file_path, "-c")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_path + ".br")
+        assert os.path.exists(file_path)
+    
+    def test_compress_single_file_with_remove(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("Test content for single file compression")
+        
+        result = run_program(file_path, "-c", "-r")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_path + ".br")
+        assert not os.path.exists(file_path)
+    
+    def test_decompress_single_file(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("Test content for decompression")
+        
+        run_program(file_path, "-c", "-r")
+        compressed_path = file_path + ".br"
+        assert os.path.exists(compressed_path)
+        
+        result = run_program(compressed_path, "-d")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_path)
+        assert os.path.exists(compressed_path)
+    
+    def test_decompress_single_file_with_remove(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("Test content for decompression")
+        
+        run_program(file_path, "-c", "-r")
+        compressed_path = file_path + ".br"
+        
+        result = run_program(compressed_path, "-d", "-r")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_path)
+        assert not os.path.exists(compressed_path)
+    
+    def test_compress_single_file_dry_run(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("Test content for dry run")
+        
+        result = run_program(file_path, "-c", "-n")
+        
+        assert result.returncode == 0
+        assert "[DRY RUN]" in result.stdout
+        assert "Would compress: test.txt -> test.txt.br" in result.stdout
+        assert not os.path.exists(file_path + ".br")
+    
+    def test_decompress_single_file_dry_run(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("Test content")
+        
+        run_program(file_path, "-c", "-r")
+        compressed_path = file_path + ".br"
+        
+        result = run_program(compressed_path, "-d", "-n")
+        
+        assert result.returncode == 0
+        assert "[DRY RUN]" in result.stdout
+        assert "Would decompress: test.txt.br -> test.txt" in result.stdout
+        assert os.path.exists(compressed_path)
+    
+    def test_decompress_non_br_file_as_file_error(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("Not a br file")
+        
+        result = run_program(file_path, "-d")
+        
+        assert result.returncode == 0
+        assert "not a .br file" in result.stdout
+    
+    def test_compress_already_br_file_as_file_error(self, temp_dir):
+        br_file = os.path.join(temp_dir, "test.txt.br")
+        with open(br_file, "wb") as f:
+            f.write(b"already compressed")
+        
+        result = run_program(br_file, "-c")
+        
+        assert result.returncode == 0
+        assert "Skipping" in result.stdout
+        assert "already compressed" in result.stdout
+    
+    def test_single_file_shows_summary(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("A" * 1000)
+        
+        result = run_program(file_path, "-c")
+        
+        assert result.returncode == 0
+        assert "Size before:" in result.stdout
+        assert "Size after:" in result.stdout
+        assert "Reduced:" in result.stdout
+    
+    def test_single_file_with_quality(self, temp_dir):
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("A" * 1000)
+        
+        result = run_program(file_path, "-c", "-q", "11")
+        
+        assert result.returncode == 0
+        assert os.path.exists(file_path + ".br")
