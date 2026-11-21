@@ -51,13 +51,21 @@ def format_size(size_bytes: float) -> str:
     return f"{size_bytes:.2f} TB"
 
 
-def compress_file(file_path: str, remove_original: bool = False, quality: int = 6) -> str:
+def compress_file(
+    file_path: str,
+    remove_original: bool = False,
+    quality: int = 6,
+    force: bool = False
+) -> str:
     with open(file_path, 'rb') as f_in:
         data = f_in.read()
     
     compressed_data = brotli.compress(data, mode=0, quality=quality)
     
     output_path = file_path + '.br'
+    if os.path.exists(output_path) and not force:
+        raise FileExistsError(f"Destination already exists: '{output_path}'. Use --force to replace it.")
+
     with open(output_path, 'wb') as f_out:
         f_out.write(compressed_data)
     
@@ -67,7 +75,11 @@ def compress_file(file_path: str, remove_original: bool = False, quality: int = 
     return output_path
 
 
-def decompress_file(file_path: str, remove_original: bool = False) -> Optional[str]:
+def decompress_file(
+    file_path: str,
+    remove_original: bool = False,
+    force: bool = False
+) -> Optional[str]:
     if not file_path.endswith('.br'):
         return None
     
@@ -77,6 +89,9 @@ def decompress_file(file_path: str, remove_original: bool = False) -> Optional[s
     data = brotli.decompress(compressed_data)
     
     output_path = file_path[:-3]
+    if os.path.exists(output_path) and not force:
+        raise FileExistsError(f"Destination already exists: '{output_path}'. Use --force to replace it.")
+
     with open(output_path, 'wb') as f_out:
         f_out.write(data)
     
@@ -92,6 +107,7 @@ def process_directory(
     remove_original: bool = False,
     exclude: Optional[List[str]] = None,
     quality: int = 6,
+    force: bool = False,
     logger: Optional[logging.Logger] = None
 ) -> None:
     if logger is None:
@@ -147,9 +163,9 @@ def process_directory(
     def process_single(full_path: str, file: str, quality: int) -> Tuple[str, Optional[str]]:
         try:
             if compress:
-                output = compress_file(full_path, remove_original, quality)
+                output = compress_file(full_path, remove_original, quality, force)
             else:
-                output = decompress_file(full_path, remove_original)
+                output = decompress_file(full_path, remove_original, force)
             return (file, None)
         except Exception as e:
             return (file, str(e))
@@ -199,6 +215,11 @@ def main() -> None:
         "-r", "--remove-original",
         action="store_true",
         help="Remove original files after compression/decompression"
+    )
+    parser.add_argument(
+        "-f", "--force",
+        action="store_true",
+        help="Replace an existing destination file"
     )
     parser.add_argument(
         "-e", "--exclude",
@@ -270,9 +291,9 @@ def main() -> None:
         
         try:
             if compress:
-                output = compress_file(target_path, args.remove_original, args.quality)
+                output = compress_file(target_path, args.remove_original, args.quality, args.force)
             else:
-                output = decompress_file(target_path, args.remove_original)
+                output = decompress_file(target_path, args.remove_original, args.force)
             
             if output:
                 size_after = os.path.getsize(output)
@@ -357,7 +378,15 @@ def main() -> None:
     start_time = time.time()
     size_before = get_directory_size(target_path, exclude=args.exclude)
     
-    process_directory(target_path, compress=compress, remove_original=args.remove_original, exclude=args.exclude, quality=args.quality, logger=logger)
+    process_directory(
+        target_path,
+        compress=compress,
+        remove_original=args.remove_original,
+        exclude=args.exclude,
+        quality=args.quality,
+        force=args.force,
+        logger=logger
+    )
     
     size_after = get_directory_size(target_path, exclude=args.exclude)
     elapsed_time = time.time() - start_time

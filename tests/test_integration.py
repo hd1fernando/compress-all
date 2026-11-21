@@ -107,6 +107,30 @@ class TestCompress:
         for original_file in files_in_temp_dir:
             assert os.path.exists(original_file)
 
+    def test_compress_does_not_overwrite_existing_destination(self, temp_dir, files_in_temp_dir):
+        original_file = files_in_temp_dir[0]
+        destination = original_file + ".br"
+        with open(destination, "wb") as f:
+            f.write(b"existing compressed data")
+
+        result = run_program(original_file, "-c")
+
+        assert "Destination already exists" in result.stdout
+        with open(destination, "rb") as f:
+            assert f.read() == b"existing compressed data"
+
+    def test_compress_force_overwrites_existing_destination(self, temp_dir, files_in_temp_dir):
+        original_file = files_in_temp_dir[0]
+        destination = original_file + ".br"
+        with open(destination, "wb") as f:
+            f.write(b"existing compressed data")
+
+        result = run_program(original_file, "-c", "--force")
+
+        assert result.returncode == 0
+        with open(destination, "rb") as f:
+            assert f.read() != b"existing compressed data"
+
 
 class TestDecompress:
     def test_decompress_creates_original_files(self, temp_dir, files_in_temp_dir, compressed_files):
@@ -145,6 +169,9 @@ class TestDecompress:
             assert f"Skipping {os.path.basename(original_file)}" not in result.stdout
     
     def test_decompress_with_remove_original(self, temp_dir, compressed_files):
+        for compressed_file in compressed_files:
+            os.remove(compressed_file[:-3])
+
         result = run_program(temp_dir, "-d", "-r")
         
         assert result.returncode == 0
@@ -159,6 +186,28 @@ class TestDecompress:
         assert result.returncode == 0
         for compressed_file in compressed_files:
             assert os.path.exists(compressed_file)
+
+    def test_decompress_does_not_overwrite_existing_destination(self, temp_dir, files_in_temp_dir, compressed_files):
+        original_file = files_in_temp_dir[0]
+        with open(original_file, "w") as f:
+            f.write("keep this content")
+
+        result = run_program(compressed_files[0], "-d")
+
+        assert "Destination already exists" in result.stdout
+        with open(original_file, "r") as f:
+            assert f.read() == "keep this content"
+
+    def test_decompress_force_overwrites_existing_destination(self, temp_dir, files_in_temp_dir, compressed_files):
+        original_file = files_in_temp_dir[0]
+        with open(original_file, "w") as f:
+            f.write("replace this content")
+
+        result = run_program(compressed_files[0], "-d", "--force")
+
+        assert result.returncode == 0
+        with open(original_file, "r") as f:
+            assert f.read() == "Content of file 0"
 
 
 class TestHelp:
