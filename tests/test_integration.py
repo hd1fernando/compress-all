@@ -756,3 +756,34 @@ class TestSingleFile:
         
         assert result.returncode == 0
         assert os.path.exists(file_path + ".br")
+
+
+class TestSymbolicLinks:
+    def test_compress_rejects_symbolic_link_source(self, temp_dir):
+        target = os.path.join(temp_dir, "target.txt")
+        source_link = os.path.join(temp_dir, "source.txt")
+        with open(target, "w") as f:
+            f.write("protected content")
+        os.symlink(target, source_link)
+
+        result = run_program(source_link, "-c")
+
+        assert "Refusing symbolic link source" in result.stdout
+        assert not os.path.exists(source_link + ".br")
+        with open(target, "r") as f:
+            assert f.read() == "protected content"
+
+    def test_compress_rejects_symbolic_link_destination(self, temp_dir):
+        source = os.path.join(temp_dir, "source.txt")
+        protected_target = os.path.join(temp_dir, "protected.txt")
+        with open(source, "w") as f:
+            f.write("content to compress")
+        with open(protected_target, "w") as f:
+            f.write("protected content")
+        os.symlink(protected_target, source + ".br")
+
+        result = run_program(source, "-c", "--force")
+
+        assert "Refusing symbolic link destination" in result.stdout
+        with open(protected_target, "r") as f:
+            assert f.read() == "protected content"

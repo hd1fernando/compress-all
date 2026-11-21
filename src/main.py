@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+import stat
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional, List, Tuple, Union
@@ -51,13 +52,36 @@ def format_size(size_bytes: float) -> str:
     return f"{size_bytes:.2f} TB"
 
 
+def open_regular_file_for_read(file_path: str):
+    if os.path.islink(file_path):
+        raise OSError(f"Refusing symbolic link source: '{file_path}'")
+
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    file_descriptor = os.open(file_path, flags)
+    file_stat = os.fstat(file_descriptor)
+    if not stat.S_ISREG(file_stat.st_mode):
+        os.close(file_descriptor)
+        raise OSError(f"Source is not a regular file: '{file_path}'")
+    return os.fdopen(file_descriptor, 'rb')
+
+
+def open_destination_for_write(output_path: str, force: bool):
+    if os.path.lexists(output_path) and os.path.islink(output_path):
+        raise OSError(f"Refusing symbolic link destination: '{output_path}'")
+
+    flags = os.O_WRONLY | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+    flags |= os.O_TRUNC if force else os.O_EXCL
+    file_descriptor = os.open(output_path, flags, 0o600)
+    return os.fdopen(file_descriptor, 'wb')
+
+
 def compress_file(
     file_path: str,
     remove_original: bool = False,
     quality: int = 6,
     force: bool = False
 ) -> str:
-    with open(file_path, 'rb') as f_in:
+    with open_regular_file_for_read(file_path) as f_in:
         data = f_in.read()
     
     compressed_data = brotli.compress(data, mode=0, quality=quality)
@@ -66,7 +90,7 @@ def compress_file(
     if os.path.exists(output_path) and not force:
         raise FileExistsError(f"Destination already exists: '{output_path}'. Use --force to replace it.")
 
-    with open(output_path, 'wb') as f_out:
+    with open_destination_for_write(output_path, force) as f_out:
         f_out.write(compressed_data)
     
     if remove_original:
@@ -83,7 +107,7 @@ def decompress_file(
     if not file_path.endswith('.br'):
         return None
     
-    with open(file_path, 'rb') as f_in:
+    with open_regular_file_for_read(file_path) as f_in:
         compressed_data = f_in.read()
     
     data = brotli.decompress(compressed_data)
@@ -92,7 +116,7 @@ def decompress_file(
     if os.path.exists(output_path) and not force:
         raise FileExistsError(f"Destination already exists: '{output_path}'. Use --force to replace it.")
 
-    with open(output_path, 'wb') as f_out:
+    with open_destination_for_write(output_path, force) as f_out:
         f_out.write(data)
     
     if remove_original:
